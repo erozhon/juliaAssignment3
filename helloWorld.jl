@@ -29,6 +29,25 @@ struct lamC
         bodyExprc
 end
 
+#environment stuff
+struct numV
+        number
+end
+struct boolV
+        b
+end
+struct closV
+        argExprCList
+        bodyExprC
+        environment
+end
+struct primV
+        op
+end
+struct strV
+        string
+end
+
 
 @test interp("5") == 5
 @test interp("hello") == "hello"
