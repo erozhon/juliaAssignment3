@@ -233,12 +233,10 @@ end
         @test interp(strC("hello"), TopEnv) == strV("hello")
         @test interp(AppC(idC("equal?"), [numC(5), numC(100)]), TopEnv) == boolV(false)
         @test interp(AppC(lamC(["f"], numC(10)), [numC(2)]), TopEnv) == numV(10)
-        #presentation test cases
 
         @test interp(AppC(lamC(["minus"], AppC(idC("minus"), [numC(8), numC(5)])),
                         [lamC(["a", "b"], AppC(idC("+"), [idC("a"),
                                 AppC(idC("*"), [numC(-1), idC("b")])]))]), TopEnv) == numV(3)
 
         @test_throws ErrorException interp(AppC(idC("/"), [numC(1), numC(0)]), TopEnv)
-
 end;
