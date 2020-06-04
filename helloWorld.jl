@@ -1,7 +1,6 @@
 #is this an import?
 using Test
 #this is a comment
-println("hello, world");
 
 # master plan
 # 1: make the data structures
@@ -18,8 +17,8 @@ struct strC
         string
 end
 struct AppC
-        fExprC
-        argExprCList
+        f
+        argC
 end
 struct ifC
         testC
@@ -42,8 +41,8 @@ struct boolV
         b
 end
 struct closV
-        argExprCList
-        bodyExprC
+        param
+        bodyC
         environment
 end
 struct primV
@@ -69,14 +68,14 @@ TopEnv = topenvironment([binding("true", boolV(true)), binding("false", boolV(fa
                 binding("<=", primV("<=")), binding("equal?", primV("equal?"))])
 
 function lookup(sym, env)
-        for bind in env
+        for bind in env.listOfBindings
                 if bind.name == sym
                         return bind.val
                 end
         end
         error("you broke the environment")
+end
 
-# for now we are pretending we have a main that will handle error cases (i.e -1)
 function interp(expr, env)
         if isa(expr, numC)
                 return numV(expr.number)
@@ -96,7 +95,34 @@ function interp(expr, env)
                         error("not a boolean")
                 end
         elseif isa(expr, AppC)
-                return #a whole thing
+                fn = interp(expr.f, env)
+                argval = interpArgs(expr.argC, env)
+                if isa(fn, closV)
+                        newEnv = extendEnv(fn.environment, fn.param, argval)
+                elseif isa(fn, primV)
+                        op = fn.op
+                        #INDEXING STARTS AT 1 BECAUSE FUCK YOU
+                        #TODO all of the stuff below
+                        if op == "+"
+                                return argval[0] + argval[1]
+                        elseif op == "-"
+                                return argval[0] + argval[1]
+                        elseif op == "*"
+                                return argval[0] * argval[1]
+                        elseif op == "/"
+                                if argval[1] != 0
+                                        return argval[0] / argval[1]
+                                else
+                                        error("div 0 error")
+                                end
+                        elseif op == "<="
+                                return argval[0] <= argval[1]
+                        elseif op == "equal?"
+                                return checkEqual(argval)
+                        end
+                else
+                        error("bad format")
+                end
         elseif isa(expr, lamC)
                 return closV(expr.argExprC, expr.bodyExprC, env)
         else
@@ -104,9 +130,60 @@ function interp(expr, env)
         end
 end
 
+function checkEqual(argval)
+        println(argval)
+        f = argval[1]
+        s = argval[2]
+        if (isa(f, numV) && isa(s, numV))
+                if s.number == f.number
+                        return boolV(true)
+                else
+                        return boolV(false)
+                end
+        elseif (isa(f, strV) && isa(s, strV))
+                if s.string == f.string
+                        return boolV(true)
+                else
+                        return boolV(false)
+                end
+        elseif (isa(f, boolV) && isa(s, boolV))
+                if f.b == s.b
+                        return boolV(true)
+                else
+                        return boolV(false)
+                end
+        else
+                return boolV(false)
+        end
+end
 
+function extendEnv(env, name, value)
+        if empty!(name) && !(empty!(value))
+                error("wrong number of args")
+        elseif length(name) != length(value)
+                return env
+        elseif empty!(name) && empty!(value)
+                return env
+        else
+                newEnv = []
+                for nv in zip(name,value)
+                        append!(newEnv, binding(nv[0], nv[1]))
+                end
+                return newEnv
+        end
+end
+
+function interpArgs(argsList, env)
+        toReturn = []
+        for a in argsList
+                append!(toReturn, [interp(a, env)])
+        end
+        return toReturn
+end
+
+#TODO more tests
 @testset "the only set" begin
         @test interp(numC(5), TopEnv) == numV(5)
-        @test interp(strC(5), TopEnv) == strV("hello")
-        @test interp(AppC(idC("equal"), [numC(5), numC(100)]), TopEnv) == boolV(false)
+        @test interp(strC("hello"), TopEnv) == strV("hello")
+        @test interp(AppC(idC("equal?"), [numC(5), numC(100)]), TopEnv) == boolV(false)
 end;
