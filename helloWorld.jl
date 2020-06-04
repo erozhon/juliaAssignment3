@@ -53,8 +53,20 @@ struct binding
         val
 end
 #big environment
-struct top-env
+struct topenvironment
         #hard initialize this?
+        listOfBindings
+end
 
-@test interp("5") == numV(5)
-@test interp("hello") == strV("hello")
+TopEnv = topenvironment([binding("true", boolV(true)), binding("false", boolV(false)),
+                binding("+", primV("+")), binding("-", primV("-")),
+                binding("*", primV("*")), binding("/", primV("/")),
+                binding("<=", primV("<=")), binding("equal?", primV("equal?"))])
+
+function interp(ExprC)
+        1+1
+end
+
+@test interp(numC(5)) == numV(5)
+@test interp(strC(5)) == strV("hello")
+@test interp(AppC(idC("equal")), [(numC(5)), numC(100)]) == boolV(false)
