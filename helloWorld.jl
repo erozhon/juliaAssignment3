@@ -22,9 +22,9 @@ struct AppC
         argExprCList
 end
 struct ifC
-        ifExprC
-        thenExprC
-        elseExprC
+        testC
+        thenC
+        elseC
 end
 struct idC
         idSymbol
@@ -68,13 +68,45 @@ TopEnv = topenvironment([binding("true", boolV(true)), binding("false", boolV(fa
                 binding("*", primV("*")), binding("/", primV("/")),
                 binding("<=", primV("<=")), binding("equal?", primV("equal?"))])
 
-function interp(ExprC)
-        
+function lookup(sym, env)
+        for bind in env
+                if bind.name == sym
+                        return bind.val
+                end
+        end
+        error("you broke the environment")
+
+# for now we are pretending we have a main that will handle error cases (i.e -1)
+function interp(expr, env)
+        if isa(expr, numC)
+                return numV(expr.number)
+        elseif isa(expr, strC)
+                return strV(expr.string)
+        elseif isa(expr, idC)
+                return lookup(expr.idSymbol, env)
+        elseif isa(expr, ifC)
+                testResult = interp(expr.testC, env)
+                if isa(testResult, boolV)
+                        if testResult.b
+                                return interp(expr.thenC, env)
+                        else
+                                return interp(expr.elseC, env)
+                        end
+                else
+                        error("not a boolean")
+                end
+        elseif isa(expr, AppC)
+                return #a whole thing
+        elseif isa(expr, lamC)
+                return closV(expr.argExprC, expr.bodyExprC, env)
+        else
+                error("you broke interp")
+        end
 end
 
 
 @testset "the only set" begin
-        @test interp(numC(5)) == numV(5)
-        @test interp(strC(5)) == strV("hello")
-        @test interp(AppC(idC("equal"), [numC(5), numC(100)])) == boolV(false)
+        @test interp(numC(5), TopEnv) == numV(5)
+        @test interp(strC(5), TopEnv) == strV("hello")
+        @test interp(AppC(idC("equal"), [numC(5), numC(100)]), TopEnv) == boolV(false)
 end;
