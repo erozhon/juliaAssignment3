@@ -48,6 +48,13 @@ struct strV
         string
 end
 
+struct binding
+        name
+        val
+end
+#big environment
+struct top-env
+        #hard initialize this?
 
-@test interp("5") == 5
-@test interp("hello") == "hello"
+@test interp("5") == numV(5)
+@test interp("hello") == strV("hello")
