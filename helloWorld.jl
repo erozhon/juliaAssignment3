@@ -1,3 +1,5 @@
+#is this an import?
+using Test
 #this is a comment
 println("hello, world");
 
@@ -23,6 +25,9 @@ struct ifC
         ifExprC
         thenExprC
         elseExprC
+end
+struct idC
+        idSymbol
 end
 struct lamC
         argExprC
@@ -64,9 +69,12 @@ TopEnv = topenvironment([binding("true", boolV(true)), binding("false", boolV(fa
                 binding("<=", primV("<=")), binding("equal?", primV("equal?"))])
 
 function interp(ExprC)
-        1+1
+        
 end
 
-@test interp(numC(5)) == numV(5)
-@test interp(strC(5)) == strV("hello")
-@test interp(AppC(idC("equal")), [(numC(5)), numC(100)]) == boolV(false)
+
+@testset "the only set" begin
+        @test interp(numC(5)) == numV(5)
+        @test interp(strC(5)) == strV("hello")
+        @test interp(AppC(idC("equal"), [numC(5), numC(100)])) == boolV(false)
+end;
