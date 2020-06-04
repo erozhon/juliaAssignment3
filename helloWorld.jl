@@ -30,7 +30,7 @@ struct idC
 end
 struct lamC
         argExprC
-        bodyExprc
+        bodyExprC
 end
 
 #environment stuff
@@ -99,24 +99,19 @@ function interp(expr, env)
                 argval = interpArgs(expr.argC, env)
                 if isa(fn, closV)
                         newEnv = extendEnv(fn.environment, fn.param, argval)
+                        return interp(fn.bodyC, newEnv)
                 elseif isa(fn, primV)
                         op = fn.op
-                        #INDEXING STARTS AT 1 BECAUSE FUCK YOU
-                        #TODO all of the stuff below
                         if op == "+"
-                                return argval[0] + argval[1]
+                                return numPlus(argval)
                         elseif op == "-"
-                                return argval[0] + argval[1]
+                                return numMinus(argval)
                         elseif op == "*"
-                                return argval[0] * argval[1]
+                                return numMult(argval)
                         elseif op == "/"
-                                if argval[1] != 0
-                                        return argval[0] / argval[1]
-                                else
-                                        error("div 0 error")
-                                end
+                                return numDiv(argval)
                         elseif op == "<="
-                                return argval[0] <= argval[1]
+                                return lessEqual(argval)
                         elseif op == "equal?"
                                 return checkEqual(argval)
                         end
@@ -130,8 +125,61 @@ function interp(expr, env)
         end
 end
 
+function numPlus(argval)
+        f = argval[1]
+        s = argval[2]
+        if (isa(f, numV) && isa(s, numV))
+                return numV(f.number + s.number)
+        else
+                error("wrong type")
+        end
+end
+
+function numMinus(argval)
+        f = argval[1]
+        s = argval[2]
+        if (isa(f, numV) && isa(s, numV))
+                return numV(f.number - s.number)
+        else
+                error("wrong type")
+        end
+end
+function numMult(argval)
+        f = argval[1]
+        s = argval[2]
+        if (isa(f, numV) && isa(s, numV))
+                return numV(f.number*s.number)
+        else
+                error("wrong type")
+        end
+end
+
+function numDiv(argval)
+        f= argval[1]
+        s = argval[2]
+        if (isa(f, numV) && isa(s, numV))
+                if s.number == 0
+                        error("attempting to divide by 0")
+                else
+                        return numV(f.number/s.number)
+                end
+        end
+end
+
+function lessEqual(argval)
+        f = argval[1]
+        s = argval[2]
+        if (isa(f, numV) && isa(s, numV))
+                if (f.number <= s.number)
+                        return boolV(true)
+                else
+                        return boolV(false)
+                end
+        else
+                error("one comparison not a number")
+        end
+end
 function checkEqual(argval)
-        println(argval)
         f = argval[1]
         s = argval[2]
         if (isa(f, numV) && isa(s, numV))
@@ -158,18 +206,17 @@ function checkEqual(argval)
 end
 
 function extendEnv(env, name, value)
-        if empty!(name) && !(empty!(value))
+        if isempty(name) && !(isempty(value))
                 error("wrong number of args")
         elseif length(name) != length(value)
                 return env
-        elseif empty!(name) && empty!(value)
+        elseif isempty(name) && isempty(value)
                 return env
         else
-                newEnv = []
                 for nv in zip(name,value)
-                        append!(newEnv, binding(nv[0], nv[1]))
+                        push!(env.listOfBindings, binding(nv[1], last(nv)))
                 end
-                return newEnv
+                return env
         end
 end
 
@@ -181,9 +228,17 @@ function interpArgs(argsList, env)
         return toReturn
 end
 
-#TODO more tests
 @testset "the only set" begin
         @test interp(numC(5), TopEnv) == numV(5)
         @test interp(strC("hello"), TopEnv) == strV("hello")
         @test interp(AppC(idC("equal?"), [numC(5), numC(100)]), TopEnv) == boolV(false)
+        @test interp(AppC(lamC(["f"], numC(10)), [numC(2)]), TopEnv) == numV(10)
+        #presentation test cases
+
+        @test interp(AppC(lamC(["minus"], AppC(idC("minus"), [numC(8), numC(5)])),
+                        [lamC(["a", "b"], AppC(idC("+"), [idC("a"),
+                                AppC(idC("*"), [numC(-1), idC("b")])]))]), TopEnv) == numV(3)
+
+        @test_throws ErrorException interp(AppC(idC("/"), [numC(1), numC(0)]), TopEnv)
+
 end;
